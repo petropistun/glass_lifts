@@ -29,12 +29,13 @@ pc2 - верх
 pc3 - вниз
 Кнопки
 pc4 - водійська
-pc5 - пасажирська
-
-pb1 pb2 - з сигналки
+pc5 - пасажирський виключатель на водійські дверці
 
 
 Мікроконтролер має бути прошитий на 8,000000 MHz від внутрішнього генератора
+
+pc4, pc5 - через 1 кОм, мають бути підтягнути на +
+ - інший контакт кнопки маю бути на корпусі 
 
 *****************************************************/
 
@@ -44,14 +45,13 @@ pb1 pb2 - з сигналки
 #include <delay.h>
 
 
-#define LONG_TIME 30 /*30 == 3 сек*/
-
 #define uint unsigned int
 
 #define BUTTON1 4
 #define BUTTON2 5
 
-char long1up = 0, long2up = 0, long1down = 0, long2down = 0;
+#define PIN_ON 0 
+#define PIN_OFF 1
 
 
 #define ADC_VREF_TYPE 0x40
@@ -72,126 +72,159 @@ return ADCW;
 
 #define MAX_VAL 1024
 
+char wait_for_button(char num, uint val)
+{
+    unsigned char adc_input = (1 == num)?BUTTON1:BUTTON2; 
+    
+    uint new_val = read_adc(adc_input);
+    
+    if (val < new_val + new_val*5/100 && val > new_val - new_val*5/100)
+        return 1;
+    else
+        return 0;
+}
+
 void check_action(uint val, char num)
 {
     
-    if(val < MAX_VAL * 10/100) // все виключено, 
+    if(val > MAX_VAL * 90/100) // все виключено, 
     {
-        if(1 == num && 0 == long1up && 0 == long1down)
+        if(1 == num)
         {
-            PORTC.0 = 0;
-            PORTC.1 = 0;
+            PORTC.0 = PIN_OFF;
+            PORTC.1 = PIN_OFF;
         }
-        else if(2 == num && 0 == long2up && 0 == long2down)
+        else if(2 == num)
         {
-            PORTC.2 = 0;
-            PORTC.3 = 0;
+            PORTC.2 = PIN_OFF;
+            PORTC.3 = PIN_OFF;
         }        
-    }else if (val >  MAX_VAL * 90/100) //позиція 1   - довгий вверх
+    }else if (val <  MAX_VAL * 10/100) //позиція 1   - довгий вверх
     {
-        if(1 == num && 0 == long2up && 0 == long2down)
+        if(1 == num)
         {
-            long1up = LONG_TIME;
-            long1down = 0; 
-            PORTC.1 = 0;
-            PORTC.0 = 1;
+            PORTC.1 = PIN_OFF;
+            PORTC.0 = PIN_ON;                      
+            while( 1 == wait_for_button(num, val)) //чекаємо поки невідпуститься кнопка
+            {
+               delay_ms(10);
+            }            
+            
+            delay_ms(500); //якщо кнопка відпустилася, чекаю ще трогкши, щоб вона пройшла через короткий режим
         }
-        else if(2 == num && 0 == long1up && 0 == long1down)
+        else if(2 == num)
         {
-            long2up = LONG_TIME;
-            long2down = 0; 
-            PORTC.3 = 0;
-            PORTC.2 = 1;
+            PORTC.3 = PIN_OFF;
+            PORTC.2 = PIN_ON; 
+            while( 1 == wait_for_button(num, val)) //чекаємо поки невідпуститься кнопка
+            {
+               delay_ms(10);
+            }            
+            
+            delay_ms(500); //якщо кнопка відпустилася, чекаю ще трогкши, щоб вона пройшла через короткий режим
+
         }        
     }
-    else if ((val < MAX_VAL * 40/100)) //позиція 2   - короткий верх
+    else if ((val > MAX_VAL * 60/100)) //позиція 2   - короткий верх
     {
-        if(1 == num && 0 == long1up && 0 == long1down)
+        if(1 == num )
         {
-            PORTC.1 = 0;
-            PORTC.0 = 1;
+            PORTC.1 = PIN_OFF;
+            PORTC.0 = PIN_ON;
+            while( 1 == wait_for_button(num, val)) //чекаємо поки невідпуститься кнопка
+            {
+               delay_ms(10);
+            }            
+            
+            //якщо кнопка відпустилася, короткочасно подаємо зворотній імпульс
+            PORTC.1 = PIN_ON;
+            PORTC.0 = PIN_OFF;
+            delay_ms(50); 
+            PORTC.1 = PIN_OFF;
+            PORTC.0 = PIN_OFF;
+
+
         }
-        else if(2 == num && 0 == long2up && 0 == long2down)
+        else if(2 == num)
         {
-            PORTC.3 = 0;
-            PORTC.2 = 1;
+            PORTC.3 = PIN_OFF;
+            PORTC.2 = PIN_ON;
+
+            while( 1 == wait_for_button(num, val)) //чекаємо поки невідпуститься кнопка
+            {
+               delay_ms(10);
+            }            
+            
+            //якщо кнопка відпустилася, короткочасно подаємо зворотній імпульс
+            PORTC.3 = PIN_ON;
+            PORTC.2 = PIN_OFF;
+            delay_ms(50); 
+            PORTC.3 = PIN_OFF;
+            PORTC.2 = PIN_OFF;
         }
         
-        if(1 == num && 0 < long1down)
-        {
-            long1down = 0;
-            PORTC.1 = 0;
-            PORTC.0 = 0;
-            delay_ms(300);            
-        }
-        else if(2 == num && 0 < long2down)
-        {                       
-            long2down = 0;
-            PORTC.3 = 0;
-            PORTC.2 = 0;
-            delay_ms(300);
-        }
-                
     }
-    else if ((val < MAX_VAL * 70/100)) //позиція 4   - довгий вниз
+    else if ((val > MAX_VAL * 30/100)) //позиція 4   - довгий вниз
     {
-        if(1 == num && 0 == long2up && 0 == long2down)
+        if(1 == num)
         {
-            long1up = 0;
-            long1down = LONG_TIME; 
-            PORTC.0 = 0;
-            PORTC.1 = 1;
+            PORTC.0 = PIN_OFF;
+            PORTC.1 = PIN_ON;                               
+            while( 1 == wait_for_button(num, val)) //чекаємо поки невідпуститься кнопка
+            {
+               delay_ms(10);
+            }            
+            
+            delay_ms(500); //якщо кнопка відпустилася, чекаю ще трогкши, щоб вона пройшла через короткий режим
+
         }
-        else if(2 == num && 0 == long1up && 0 == long1down)
+        else if(2 == num)
         {   
-            long2up = 0;
-            long2down = LONG_TIME; 
-            PORTC.2 = 0;
-            PORTC.3 = 1;
+            PORTC.2 = PIN_OFF;
+            PORTC.3 = PIN_ON;
+            while( 1 == wait_for_button(num, val)) //чекаємо поки невідпуститься кнопка
+            {
+               delay_ms(10);
+            }            
+            
+            delay_ms(500); //якщо кнопка відпустилася, чекаю ще трогкши, щоб вона пройшла через короткий режим
         }        
     }
-    else if ((val < MAX_VAL * 90/100)) //позиція 3   - короткий вниз 
+    else if ((val > MAX_VAL * 10/100)) //позиція 3   - короткий вниз 
     {
-        if(1 == num && 0 == long1up && 0 == long1down)
+        if(1 == num)
         {
-            PORTC.0 = 0;
-            PORTC.1 = 1;
+            PORTC.0 = PIN_OFF;
+            PORTC.1 = PIN_ON;
+            while( 1 == wait_for_button(num, val)) //чекаємо поки невідпуститься кнопка
+            {
+               delay_ms(10);
+            }            
+            
+            //якщо кнопка відпустилася, короткочасно подаємо зворотній імпульс
+            PORTC.0 = PIN_ON;
+            PORTC.1 = PIN_OFF;
+            delay_ms(50); 
+            PORTC.0 = PIN_OFF;
+            PORTC.1 = PIN_OFF;
         }
-        else if(2 == num && 0 == long2up && 0 == long2down)
+        else if(2 == num)
         {
-            PORTC.2 = 0;
-            PORTC.3 = 1;
-        }        
-
-        if(1 == num && 0 < long1up )
-        {
-            long1up = 0;
-            PORTC.0 = 0;
-            PORTC.1 = 0;
-            delay_ms(300);
-        }
-        else if(2 == num && 0 < long2up)
-        {                       
-            long2up = 0;
-            PORTC.2 = 0;
-            PORTC.3 = 0;
-            delay_ms(300);
+            PORTC.2 = PIN_OFF;
+            PORTC.3 = PIN_ON;
+            while( 1 == wait_for_button(num, val)) //чекаємо поки невідпуститься кнопка
+            {
+               delay_ms(10);
+            }            
+            
+            //якщо кнопка відпустилася, короткочасно подаємо зворотній імпульс
+            PORTC.2 = PIN_ON;
+            PORTC.3 = PIN_OFF;
+            delay_ms(50); 
+            PORTC.2 = PIN_OFF;
+            PORTC.3 = PIN_OFF;
         }        
     }
-}
-
-void close_all()
-{
-    PORTC.0 = 0;
-    PORTC.1 = 0;
-    PORTC.2 = 0;
-    PORTC.3 = 0;
-
-    long1down = 0;  
-    long2down = 0;  
-
-    long1up = LONG_TIME;
-    long2up = LONG_TIME;
 }
 
 // Declare your global variables here
@@ -199,8 +232,6 @@ void main(void)
 {
 // Declare your local variables here
 uint bt1 = 0, bt2 = 0;
-
-long1up = 0; long2up = 0; long1down = 0; long2down = 0;
 
 // Input/Output Ports initialization
 // Port B initialization
@@ -302,58 +333,6 @@ while (1)
         bt2 = read_adc(BUTTON2);
         check_action(bt2, 2);          
 
-        if(long1up > 0)
-        {                         
-            PORTC.2 = 0;
-            PORTC.3 = 0;
-            PORTC.1 = 0;
-            PORTC.0 = 1;
-            long1up--;
-        }
-        else if(long2up > 0)
-        {
-            PORTC.1 = 0;
-            PORTC.0 = 0;
-            PORTC.3 = 0;
-            PORTC.2 = 1;
-            long2up--;
-        }
-        else if(long1down > 0)
-        {
-            long1down--;
-        }
-        else if(long2down > 0)
-        {
-            long2down--;
-        }
-
-        if(0 == PINB.1 || 1 == PINB.2)
-        {
-            close_all();
-            PORTD.0 = 1;
-        }   
-        else
-        {
-            PORTD.0 = 0;
-        }
-                        
-        delay_ms(100);
-        
-      
-        /*PORTC.0 = 1;
-        delay_ms(volt);
-        PORTC.0 = 0;
-        
-        PORTC.1 = 1;
-        delay_ms(volt);
-        PORTC.1 = 0;
-
-        PORTC.2 = 1;
-        delay_ms(volt);
-        PORTC.2 = 0;
-
-        PORTC.3 = 1;
-        delay_ms(volt);
-        PORTC.3 = 0;           */
+        delay_ms(50);
       }
 }
