@@ -115,7 +115,7 @@ WarningUnknownPragma=1
 LinkerWarnings=1
 DebugBootLoader=0
 WatchAVR8LAutoVariables=0
-Build=44
+Build=46
 UseEEPROMLocation0=1
 [Assembler]
 OutputFormat=1
@@ -220,7 +220,7 @@ BK9=-1
 Blocks=0
 [HeadersList]
 Files=1
-F1=F:\Project\MicroControler\sklo_pidjomnuk\proj_I_v2\sklo.c
+F1=F:\Project\MicroControler\sklo_pidjomnuk\glass_lifts\src\sklo.c
 [Header1]
 Files=3
 F1=C:\cvavreval\inc\mega8.h

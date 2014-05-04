@@ -72,16 +72,33 @@ return ADCW;
 
 #define MAX_VAL 1024
 
-char wait_for_button(char num, uint val)
+#define PULSE_TIME 25
+
+#define ACCURACY 5
+
+char is_near(uint val1, uint val2)
 {
-    unsigned char adc_input = (1 == num)?BUTTON1:BUTTON2; 
-    
-    uint new_val = read_adc(adc_input);
-    
-    if (val < new_val + new_val*5/100 && val > new_val - new_val*5/100)
+    if (val1 < val2 + val2*ACCURACY/100 && val1 > val2 - val2*ACCURACY/100)
         return 1;
     else
         return 0;
+}
+
+char wait_for_release_button(char num)
+{
+    unsigned char adc_input = (1 == num)?BUTTON1:BUTTON2; 
+                                                           
+    while(1)
+    {
+        uint new_val = read_adc(adc_input), new_val2;
+        delay_ms(40);
+        new_val2 = read_adc(adc_input);
+    
+        if (is_near(new_val, new_val) && new_val > MAX_VAL * 90/100)
+            return 1;
+            
+        delay_ms(25);
+    }
 }
 
 void check_action(uint val, char num)
@@ -105,23 +122,14 @@ void check_action(uint val, char num)
         {
             PORTC.1 = PIN_OFF;
             PORTC.0 = PIN_ON;                      
-            while( 1 == wait_for_button(num, val)) //чекаємо поки невідпуститься кнопка
-            {
-               delay_ms(10);
-            }            
-            
-            delay_ms(500); //якщо кнопка відпустилася, чекаю ще трогкши, щоб вона пройшла через короткий режим
+            wait_for_release_button(num);// чекаю на відпущення кнопки (короткого і довгого режиму)
+                          
         }
         else if(2 == num)
         {
             PORTC.3 = PIN_OFF;
             PORTC.2 = PIN_ON; 
-            while( 1 == wait_for_button(num, val)) //чекаємо поки невідпуститься кнопка
-            {
-               delay_ms(10);
-            }            
-            
-            delay_ms(500); //якщо кнопка відпустилася, чекаю ще трогкши, щоб вона пройшла через короткий режим
+            wait_for_release_button(num);// чекаю на відпущення кнопки (короткого і довгого режиму)
 
         }        
     }
@@ -131,15 +139,13 @@ void check_action(uint val, char num)
         {
             PORTC.1 = PIN_OFF;
             PORTC.0 = PIN_ON;
-            while( 1 == wait_for_button(num, val)) //чекаємо поки невідпуститься кнопка
-            {
-               delay_ms(10);
-            }            
+
+            wait_for_release_button(num);// чекаю на відпущення кнопки (короткого і довгого режиму)
             
             //якщо кнопка відпустилася, короткочасно подаємо зворотній імпульс
             PORTC.1 = PIN_ON;
             PORTC.0 = PIN_OFF;
-            delay_ms(50); 
+            delay_ms(PULSE_TIME); 
             PORTC.1 = PIN_OFF;
             PORTC.0 = PIN_OFF;
 
@@ -150,15 +156,12 @@ void check_action(uint val, char num)
             PORTC.3 = PIN_OFF;
             PORTC.2 = PIN_ON;
 
-            while( 1 == wait_for_button(num, val)) //чекаємо поки невідпуститься кнопка
-            {
-               delay_ms(10);
-            }            
+            wait_for_release_button(num);// чекаю на відпущення кнопки (короткого і довгого режиму)
             
             //якщо кнопка відпустилася, короткочасно подаємо зворотній імпульс
             PORTC.3 = PIN_ON;
             PORTC.2 = PIN_OFF;
-            delay_ms(50); 
+            delay_ms(PULSE_TIME); 
             PORTC.3 = PIN_OFF;
             PORTC.2 = PIN_OFF;
         }
@@ -170,24 +173,16 @@ void check_action(uint val, char num)
         {
             PORTC.0 = PIN_OFF;
             PORTC.1 = PIN_ON;                               
-            while( 1 == wait_for_button(num, val)) //чекаємо поки невідпуститься кнопка
-            {
-               delay_ms(10);
-            }            
-            
-            delay_ms(500); //якщо кнопка відпустилася, чекаю ще трогкши, щоб вона пройшла через короткий режим
+
+            wait_for_release_button(num);// чекаю на відпущення кнопки (короткого і довгого режиму)
 
         }
         else if(2 == num)
         {   
             PORTC.2 = PIN_OFF;
             PORTC.3 = PIN_ON;
-            while( 1 == wait_for_button(num, val)) //чекаємо поки невідпуститься кнопка
-            {
-               delay_ms(10);
-            }            
-            
-            delay_ms(500); //якщо кнопка відпустилася, чекаю ще трогкши, щоб вона пройшла через короткий режим
+
+            wait_for_release_button(num);// чекаю на відпущення кнопки (короткого і довгого режиму)
         }        
     }
     else if ((val > MAX_VAL * 10/100)) //позиція 3   - короткий вниз 
@@ -196,15 +191,13 @@ void check_action(uint val, char num)
         {
             PORTC.0 = PIN_OFF;
             PORTC.1 = PIN_ON;
-            while( 1 == wait_for_button(num, val)) //чекаємо поки невідпуститься кнопка
-            {
-               delay_ms(10);
-            }            
+
+            wait_for_release_button(num);// чекаю на відпущення кнопки (короткого і довгого режиму)
             
             //якщо кнопка відпустилася, короткочасно подаємо зворотній імпульс
             PORTC.0 = PIN_ON;
             PORTC.1 = PIN_OFF;
-            delay_ms(50); 
+            delay_ms(PULSE_TIME); 
             PORTC.0 = PIN_OFF;
             PORTC.1 = PIN_OFF;
         }
@@ -212,15 +205,13 @@ void check_action(uint val, char num)
         {
             PORTC.2 = PIN_OFF;
             PORTC.3 = PIN_ON;
-            while( 1 == wait_for_button(num, val)) //чекаємо поки невідпуститься кнопка
-            {
-               delay_ms(10);
-            }            
+
+            wait_for_release_button(num);// чекаю на відпущення кнопки (короткого і довгого режиму)
             
             //якщо кнопка відпустилася, короткочасно подаємо зворотній імпульс
             PORTC.2 = PIN_ON;
             PORTC.3 = PIN_OFF;
-            delay_ms(50); 
+            delay_ms(PULSE_TIME); 
             PORTC.2 = PIN_OFF;
             PORTC.3 = PIN_OFF;
         }        
@@ -231,7 +222,7 @@ void check_action(uint val, char num)
 void main(void)
 {
 // Declare your local variables here
-uint bt1 = 0, bt2 = 0;
+uint bt1 = 0, bt2 = 0, bt3 = 0;
 
 // Input/Output Ports initialization
 // Port B initialization
@@ -325,14 +316,26 @@ TWCR=0x00;
  
 while (1)
       {
-      // Place your code here
+        // Place your code here
       
         bt1 = read_adc(BUTTON1);
-        check_action(bt1, 1);
+        delay_ms(10);
+        bt2 = read_adc(BUTTON1);
+        delay_ms(10);
+        bt3 = read_adc(BUTTON1);
+           
+        if( is_near(bt1, bt2) && is_near(bt1, bt3))
+        { 
+            check_action(bt1, 1);
+        }
 
+        bt1 = read_adc(BUTTON2);
+        delay_ms(10);
         bt2 = read_adc(BUTTON2);
-        check_action(bt2, 2);          
+        delay_ms(10);
+        bt3 = read_adc(BUTTON2);
+        
+        check_action(bt1, 2);          
 
-        delay_ms(50);
       }
 }
